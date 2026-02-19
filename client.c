@@ -9,6 +9,33 @@
 
 
 #define BUFSIZE 1024
+void playGame(int fd)
+{
+    char buffer[BUFSIZE];
+    char user_input[BUFSIZE];
+    memset(buffer,0,sizeof(buffer));
+    memset(user_input,0,sizeof(user_input));
+
+    while(recv_line(buffer,sizeof(buffer))>0)
+    {
+        if(strcmp("Your Turn",buffer)==0)
+        {
+            bool valid = false;
+            printf("Enter move ");
+            //take user input
+            while(!valid)
+            {
+                fgets(user_input,sizeof(user_input),stdin);
+
+                if(validateInput(user_input)) valid = true;
+            }
+
+            send(fd,user_input,strlen(user_input),0);
+            memset(buffer,0,sizeof(buffer));
+            memset(user_input,0,sizeof(user_input));
+        }
+    }
+}
 
 int recv_line(int socket_fd,char* buffer,int max_len)
 {
@@ -55,17 +82,22 @@ int main(int argc,char* argv[])
 
     address.sin_family = AF_INET;
     address.sin_port = htons(port);
-    inet_pton(AF_INET,ip_address,&(address.sin_addr));
 
-    if(connect(fd,(sockaddr *)&address,sizeof(address))<0){perror"connection failed";exit(1);}
+    if(inet_pton(AF_INET,ip_address,&(address.sin_addr))<=0)
+    {
+        perror("Invalid IP Adress")
+        exit(0);
+    }
+
+    if(connect(fd,(struct sockaddr *)&address,sizeof(address))<0){perror("connection failed");exit(1);}
 
     const char* handshake_message = "Ready  to Play\n";
 
     char buffer[BUFSIZE];
-    memset(buf,0,sizeof(buf));
+    memset(buffer,0,sizeof(buf));
 
     //handshake initiated by client side
-    send(fd,handshake_message,sizeof(handshake_message),0);
+    send(fd,handshake_message,strlen(handshake_message),0);
 
     //receive response from server side
     int bytes_received = recv_line(fd,buffer,sizeof(buffer));
@@ -77,7 +109,7 @@ int main(int argc,char* argv[])
 
     printf("Message from server side is : %s\n",buffer);
 
-    if(buffer == "START") playGame(fd);
+    if(strcmp("START",buffer)) playGame(fd);
 
     close(fd);
     return 0;
