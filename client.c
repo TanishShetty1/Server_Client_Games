@@ -43,7 +43,7 @@ int recv_line(int socket_fd,char* buffer,int max_len)
     return i;
 }
 
-int main(int argc,char* argv)
+int main(int argc,char* argv[])
 {
     int port = atoi(argv[1]);
     char* ip_address = argv[2];
@@ -58,9 +58,27 @@ int main(int argc,char* argv)
     inet_pton(AF_INET,ip_address,&(address.sin_addr));
 
     if(connect(fd,(sockaddr *)&address,sizeof(address))<0){perror"connection failed";exit(1);}
+
+    const char* handshake_message = "Ready  to Play\n";
+
     char buffer[BUFSIZE];
     memset(buf,0,sizeof(buf));
 
+    //handshake initiated by client side
+    send(fd,handshake_message,sizeof(handshake_message),0);
+
+    //receive response from server side
     int bytes_received = recv_line(fd,buffer,sizeof(buffer));
+    if(bytes_recevied<=0)
+    {
+        perror("server busy");
+        exit(1);
+    }
+
+    printf("Message from server side is : %s\n",buffer);
+
+    if(buffer == "START") playGame(fd);
+
+    close(fd);
     return 0;
 }
